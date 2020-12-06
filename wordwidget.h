@@ -28,6 +28,7 @@ public:
 public slots:
     void showAddEntryDialog();
     void addEntry(QString spelling, QString meaning);
+    void addEntry(Word word);
     void editEntry();
     void removeEntry();
 
@@ -36,7 +37,7 @@ signals:
 
 private:
     void setupTabs();
-
+    void updateTable();
     WordTableModel *table;
     WordDB * wordb; //Êý¾Ý¿â
     //NewAddressTab *newAddressTab;

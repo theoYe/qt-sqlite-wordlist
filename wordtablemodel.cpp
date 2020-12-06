@@ -1,5 +1,8 @@
 #include "wordtablemodel.h"
 
+QMap<QString, QString> WordDB::map = QMap<QString, QString>();
+//QList<Word> WordDB::wordList = QList<Word>();
+
 //! [0]
 WordTableModel::WordTableModel(QObject * parent)
     : QAbstractTableModel(parent)

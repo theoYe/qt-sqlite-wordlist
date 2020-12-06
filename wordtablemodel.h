@@ -3,10 +3,12 @@
 
 #include<QAbstractTableModel>
 #include <QList>
+#include <QMap>
 #include "sqlite3.h"
 
 struct Word
 {
+
     QString spelling;
     QString meaning;
     Word(){}
@@ -50,9 +52,11 @@ public:
     bool insertRows(int position, int rows, const QModelIndex &index = QModelIndex()) override;
     bool removeRows(int position, int rows, const QModelIndex &index = QModelIndex()) override;
     QList<Word> getWords() const;
-private:
+
     QList<Word> words;
 };
+
+
 
 
 class WordDB{
@@ -62,7 +66,10 @@ public:
        initDB();
     }
 
-    static int initDB(){
+    static QMap<QString, QString> map ;
+//    static QList<Word> wordList;
+
+    int initDB(){
         sqlite3 *db;
         char *zErrMsg = 0;
         int rc;
@@ -96,7 +103,60 @@ public:
     }
 
     //获取数据
-    QList<Word> getAll();
+    int getAll(QList<Word> &wordList){
+
+        sqlite3 *db;
+        char *zErrMsg = 0;
+        int rc;
+        char *sql;
+        const char* data = "Callback function called";
+
+        /* Open database */
+        rc = sqlite3_open("words.db", &db);
+        if( rc ) {
+        fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
+        return(0);
+        } else {
+        fprintf(stderr, "Opened database successfully\n");
+        }
+
+        /* Create SQL statement */
+        sql = "SELECT * from WORD";
+
+        /* Execute SQL statement */
+        rc = sqlite3_exec(db, sql, callback, (void*)data, &zErrMsg);
+        if( rc != SQLITE_OK ) {
+        fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        sqlite3_free(zErrMsg);
+        } else {
+        fprintf(stdout, "Operation done successfully\n");
+          //wordList.push_back(Word(i.key(), i.value()));
+
+        QMapIterator<QString, QString> i(WordDB::map);
+        while (i.hasNext()) {
+            i.next();
+            wordList.push_back(Word(i.key(), i.value()));
+        }
+        }
+        sqlite3_close(db);
+        return 0;
+    }
+
+    //callback 函数，当使用 select查询时会被调用多次
+    static int callback(void *data, int argc, char **argv, char **azColName){
+    int i;
+    fprintf(stderr, "%s: ", (const char*)data);
+
+    for(i = 0; i<argc; i++){
+        printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+
+    }
+    WordDB::map[argv[1]] = argv[2];
+    printf("\n");
+    return 0;
+
+    printf("callback called\n");
+    }
 
     //插入
     int insertRow(Word word){
@@ -117,17 +177,10 @@ public:
         /* Create SQL statement */
 
         sprintf(sql ,"INSERT INTO WORD (SPELL,MEANING) " \
-                "VALUES ('%s', '%s');\0", word.spelling.data(),word.meaning.data()
+                "VALUES ('%s', '%s');\0", word.spelling.toLatin1().data(),word.meaning.toLatin1().data()
                 );
 
-//        sql = "INSERT INTO WORD (ID,NAME,AGE,ADDRESS,SALARY) " \
-//        "VALUES (1, 'Paul', 32, 'California', 20000.00 ); " \
-//        "INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY) " \
-//        "VALUES (2, 'Allen', 25, 'Texas', 15000.00 ); " \
-//        "INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY)" \
-//        "VALUES (3, 'Teddy', 23, 'Norway', 20000.00 );" \
-//        "INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY)" \
-//        "VALUES (4, 'Mark', 25, 'Rich-Mond ', 65000.00 );";
+
 
         /* Execute SQL statement */
         rc = sqlite3_exec(db, sql, NULL, NULL, &zErrMsg);
@@ -142,10 +195,71 @@ public:
     }
 
     //删除
-    int deleteRow(Word word);
+    int deleteRow(Word word){
+        sqlite3 *db;
+        char *zErrMsg = 0;
+        int rc;
+        char  sql[2048];
+        const char* data = "Callback function called";
+
+        /* Open database */
+        rc = sqlite3_open("words.db", &db);
+        if( rc ) {
+        fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
+        return(0);
+        } else {
+        fprintf(stderr, "Opened database successfully\n");
+        }
+
+        /* Create merged SQL statement */
+        sprintf(sql , "DELETE from WORD where spell='%s';", word.spelling.toLatin1().data());
+
+
+        /* Execute SQL statement */
+        rc = sqlite3_exec(db, sql, NULL, NULL, &zErrMsg);
+        if( rc != SQLITE_OK ) {
+        fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        sqlite3_free(zErrMsg);
+        } else {
+        fprintf(stdout, "Operation done successfully\n");
+        }
+        sqlite3_close(db);
+        return 0;
+    }
 
     //编辑
-    int updateRow(Word oldWord , Word newWord);
+    int updateRow(Word oldWord , Word newWord){
+
+        sqlite3 *db;
+        char *zErrMsg = 0;
+        int rc;
+        char sql[2048];
+        const char* data = "Callback function called";
+
+        /* Open database */
+        rc = sqlite3_open("words.db", &db);
+        if( rc ) {
+        fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
+        return(0);
+        } else {
+        fprintf(stderr, "Opened database successfully\n");
+        }
+
+        /* Create merged SQL statement */
+        sprintf(sql ,"UPDATE  WORD set meaning='%s' where spell='%s';",
+                newWord.meaning.toLatin1().data(),oldWord.spelling.toLatin1().data());
+
+
+        /* Execute SQL statement */
+        rc = sqlite3_exec(db, sql, NULL, (void*)data, &zErrMsg);
+        if( rc != SQLITE_OK ) {
+        fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        sqlite3_free(zErrMsg);
+        } else {
+        fprintf(stdout, "Operation done successfully\n");
+        }
+        sqlite3_close(db);
+    }
 
     //导出
     int dumpToFile(QFile fileName);
@@ -153,6 +267,10 @@ public:
     //导入
     int importFromFile(QFile fileName);
 };
+
+//WordDB::map = QMap<QString, QString>();
+
+
 
 
 #endif // WORDMODEL_H

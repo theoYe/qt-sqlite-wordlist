@@ -12,11 +12,26 @@ WordWidget::WordWidget(QWidget * parent)
 //        this, &AddressWidget::addEntry);
 
     //addTab(newAddressTab, "Address Book");
-    wordb->insertRow(Word("aaa", "bbb"));
+//    wordb->insertRow(Word("aa1", "aaaaaa"));
+//    wordb->insertRow(Word("aa2", "bbbbbb"));
+//    wordb->updateRow(Word("aa2","bbbbb"), Word("aa3","33333"));
+
+
+    wordb->getAll(table->words);
+//    fprintf(stderr,"list:%s",WordDB::wordList[1].meaning.toLatin1().data());
     setupTabs();
+
 }
 
+void WordWidget::updateTable(){
+    for (int i = 0; i < table->words.size(); ++i) {
+        addEntry(table->words.at(i));
+    }
+}
 
+void WordWidget::addEntry(Word word){
+     addEntry(word.spelling.toLatin1().data() , word.meaning.toLatin1().data());
+}
 void WordWidget::importFromFile(const QString &fileName){}
 void WordWidget::dumpToFile(const QString &fileName){}
 
@@ -30,7 +45,6 @@ void WordWidget::showAddEntryDialog(){
 
         addEntry(spelling, meaning);
     }
-
 }
 
 
@@ -43,10 +57,13 @@ void WordWidget::addEntry(QString spelling, QString meaning){
         index = table->index(0, 1, QModelIndex());  // 0行1列
         table->setData(index, meaning, Qt::EditRole);
 //        removeTab(indexOf(newmeaningTab));
+
+        wordb->insertRow(Word(spelling, meaning));
     } else {
         QMessageBox::information(this, tr("Duplicate spelling"),
             tr("The spelling \"%1\" already exists.").arg(spelling));
     }
+
 }
 void WordWidget::editEntry(){
     QTableView *temp = static_cast<QTableView*>(currentWidget());
@@ -84,6 +101,9 @@ void WordWidget::editEntry(){
         if (newMeaning != meaning) {
             QModelIndex index = table->index(row, 1, QModelIndex());
             table->setData(index, newMeaning, Qt::EditRole);
+
+           //更新数据库
+            wordb->updateRow(Word( spelling, meaning) , Word(spelling, newMeaning));
         }
     }
 }
@@ -97,6 +117,9 @@ void WordWidget::removeEntry(){
     foreach (QModelIndex index, indexes) {
         int row = proxy->mapToSource(index).row();  //获取第几行
         table->removeRows(row, 1, QModelIndex());
+
+        //数据库删除
+        wordb->deleteRow(table->words.at(index.row()) );
     }
 
 //    if (table->rowCount(QModelIndex()) == 0) {
