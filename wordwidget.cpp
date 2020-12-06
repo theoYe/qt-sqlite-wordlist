@@ -12,7 +12,7 @@ WordWidget::WordWidget(QWidget * parent)
 //        this, &AddressWidget::addEntry);
 
     //addTab(newAddressTab, "Address Book");
-
+    wordb->insertRow(Word("aaa", "bbb"));
     setupTabs();
 }
 

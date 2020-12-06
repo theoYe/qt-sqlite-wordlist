@@ -9,6 +9,11 @@ struct Word
 {
     QString spelling;
     QString meaning;
+    Word(){}
+    Word(QString spelling,QString meaning)
+        :spelling(spelling),meaning(meaning){}
+
+
 
     bool operator==(const Word &other) const
     {
@@ -74,7 +79,7 @@ public:
 
         /* Create SQL statement */
         sql = "CREATE TABLE IF NOT EXISTS WORD(" \
-        "ID INT PRIMARY KEY NOT NULL," \
+        "ID INTEGER PRIMARY KEY AUTOINCREMENT," \
         "SPELL TEXT NOT NULL," \
         "MEANING TEXT NOT NULL);" ;
 
@@ -94,10 +99,53 @@ public:
     QList<Word> getAll();
 
     //²åÈë
-    int insertRow(Word word);
+    int insertRow(Word word){
+        sqlite3 *db;
+        char *zErrMsg = 0;
+        int rc;
+        char sql[2048];
+
+        /* Open database */
+        rc = sqlite3_open("words.db", &db);
+        if( rc ) {
+        fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
+        return(0);
+        } else {
+        fprintf(stderr, "Opened database successfully\n");
+        }
+
+        /* Create SQL statement */
+
+        sprintf(sql ,"INSERT INTO WORD (SPELL,MEANING) " \
+                "VALUES ('%s', '%s');\0", word.spelling.data(),word.meaning.data()
+                );
+
+//        sql = "INSERT INTO WORD (ID,NAME,AGE,ADDRESS,SALARY) " \
+//        "VALUES (1, 'Paul', 32, 'California', 20000.00 ); " \
+//        "INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY) " \
+//        "VALUES (2, 'Allen', 25, 'Texas', 15000.00 ); " \
+//        "INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY)" \
+//        "VALUES (3, 'Teddy', 23, 'Norway', 20000.00 );" \
+//        "INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY)" \
+//        "VALUES (4, 'Mark', 25, 'Rich-Mond ', 65000.00 );";
+
+        /* Execute SQL statement */
+        rc = sqlite3_exec(db, sql, NULL, NULL, &zErrMsg);
+        if( rc != SQLITE_OK ){
+        fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        sqlite3_free(zErrMsg);
+        } else {
+        fprintf(stdout, "Records created successfully\n");
+        }
+        sqlite3_close(db);
+        return 0;
+    }
 
     //É¾³ý
     int deleteRow(Word word);
+
+    //±à¼­
+    int updateRow(Word oldWord , Word newWord);
 
     //µ¼³ö
     int dumpToFile(QFile fileName);
