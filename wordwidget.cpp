@@ -18,7 +18,7 @@ WordWidget::WordWidget(QWidget * parent)
 
 
     wordb->getAll(table->words);
-//    fprintf(stderr,"list:%s",WordDB::wordList[1].meaning.toLatin1().data());
+//    fprintf(stderr,"list:%s",WordDB::wordList[1].meaning.toUtf8().data());
     setupTabs();
 
 }
@@ -30,10 +30,14 @@ void WordWidget::updateTable(){
 }
 
 void WordWidget::addEntry(Word word){
-     addEntry(word.spelling.toLatin1().data() , word.meaning.toLatin1().data());
+     addEntry(word.spelling.toUtf8().data() , word.meaning.toUtf8().data());
 }
 void WordWidget::importFromFile(const QString &fileName){}
-void WordWidget::dumpToFile(const QString &fileName){}
+void WordWidget::dumpToFile(const QString &fileName){
+
+
+    wordb->dumpToFile(fileName);
+}
 
 void WordWidget::showAddEntryDialog(){
 
@@ -116,10 +120,13 @@ void WordWidget::removeEntry(){
 
     foreach (QModelIndex index, indexes) {
         int row = proxy->mapToSource(index).row();  //获取第几行
+        //数据库删除 必须放在数据删除前面， 否则index.row()返回的结果是更新过的
+        Word word =table->words.at(index.row());
+        wordb->deleteRow(word);
+        //数据删除
         table->removeRows(row, 1, QModelIndex());
 
-        //数据库删除
-        wordb->deleteRow(table->words.at(index.row()) );
+
     }
 
 //    if (table->rowCount(QModelIndex()) == 0) {

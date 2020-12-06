@@ -5,7 +5,8 @@
 #include <QList>
 #include <QMap>
 #include "sqlite3.h"
-
+#include "Utils.h"
+#include "fileapi.h"
 struct Word
 {
 
@@ -135,7 +136,7 @@ public:
         QMapIterator<QString, QString> i(WordDB::map);
         while (i.hasNext()) {
             i.next();
-            wordList.push_back(Word(i.key(), i.value()));
+            wordList.push_front(Word(i.key(), i.value()));
         }
         }
         sqlite3_close(db);
@@ -177,10 +178,8 @@ public:
         /* Create SQL statement */
 
         sprintf(sql ,"INSERT INTO WORD (SPELL,MEANING) " \
-                "VALUES ('%s', '%s');\0", word.spelling.toLatin1().data(),word.meaning.toLatin1().data()
+                "VALUES ('%s', '%s');\0", word.spelling.toUtf8().data(),word.meaning.toUtf8().data()
                 );
-
-
 
         /* Execute SQL statement */
         rc = sqlite3_exec(db, sql, NULL, NULL, &zErrMsg);
@@ -212,7 +211,7 @@ public:
         }
 
         /* Create merged SQL statement */
-        sprintf(sql , "DELETE from WORD where spell='%s';", word.spelling.toLatin1().data());
+        sprintf(sql , "DELETE from WORD where spell='%s';", word.spelling.toUtf8().data());
 
 
         /* Execute SQL statement */
@@ -247,7 +246,7 @@ public:
 
         /* Create merged SQL statement */
         sprintf(sql ,"UPDATE  WORD set meaning='%s' where spell='%s';",
-                newWord.meaning.toLatin1().data(),oldWord.spelling.toLatin1().data());
+                newWord.meaning.toUtf8().data(),oldWord.spelling.toUtf8().data());
 
 
         /* Execute SQL statement */
@@ -262,7 +261,56 @@ public:
     }
 
     //导出
-    int dumpToFile(QFile fileName);
+    int dumpToFile(const QString &fileName){
+        sqlite3 *db;
+        FILE    *dump_file;
+        int i;
+        sqlite3_stmt *stmt;
+        int col_num = 3;
+
+
+        int rc;
+        rc = sqlite3_open("words.db", &db);
+        if( rc ) {
+        fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
+        return(0);
+        } else {
+        fprintf(stderr, "Opened database successfully\n");
+        }
+
+
+
+        dump_file = fopen(fileName.toUtf8().data(), "w+");
+        if (dump_file == NULL) {
+            /* Error handling with errno and exit */
+        }
+
+        sqlite3_prepare_v2(db, "SELECT id, spell, meaning FROM WORD;",
+                           100, &stmt, NULL);
+        /* dump columns names into the file */
+        for (i = 0; i < col_num; i++) {
+            if(i != col_num-1)
+                fprintf (dump_file, "%s,", sqlite3_column_name(stmt, i));
+            else
+                fprintf (dump_file, "%s", sqlite3_column_name(stmt, i));
+        }
+
+        fprintf(dump_file , "\n");
+        /* Dump columns data into the file */
+        while (SQLITE_ROW == sqlite3_step(stmt)) {
+            for (i = 0; i < col_num; i++) {
+                if(i != col_num-1)
+                    fprintf (dump_file, "%s,", sqlite3_column_text(stmt, i));
+                else
+                    fprintf (dump_file, "%s", sqlite3_column_text(stmt, i));
+            }
+          fprintf (dump_file,"\n");
+        }
+        /* We're ready to leave */
+        sqlite3_finalize (stmt);
+        fflush(dump_file);  //不加可能会没东西
+        sqlite3_close(db);
+    }
 
     //导入
     int importFromFile(QFile fileName);
