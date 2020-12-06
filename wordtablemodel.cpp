@@ -100,8 +100,7 @@ bool WordTableModel::removeRows(int position, int rows, const QModelIndex &index
 bool WordTableModel::setData(const QModelIndex &index, const QVariant &value, int role)
 {
     if (index.isValid() && role == Qt::EditRole) {
-        int row = index.row();
-
+        int row = index.row();  //ÐÐÊý
         auto word = words.value(row);
 
         if (index.column() == 0)
@@ -113,10 +112,8 @@ bool WordTableModel::setData(const QModelIndex &index, const QVariant &value, in
 
         words.replace(row, word);
         emit dataChanged(index, index, {role});
-
         return true;
     }
-
     return false;
 }
 //! [6]

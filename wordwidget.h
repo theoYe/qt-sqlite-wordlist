@@ -38,6 +38,7 @@ private:
     void setupTabs();
 
     WordTableModel *table;
+    WordDB * wordb; //Êý¾Ý¿â
     //NewAddressTab *newAddressTab;
     QSortFilterProxyModel *proxyModel;
 };

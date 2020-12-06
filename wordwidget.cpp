@@ -6,6 +6,7 @@ WordWidget::WordWidget(QWidget * parent)
     :QTabWidget(parent)
 {
     table = new WordTableModel(this);
+    wordb = new WordDB();  //初始化数据库
 //    newAddressTab = new NewAddressTab(this);
 //    connect(newAddressTab, &NewAddressTab::sendDetails,
 //        this, &AddressWidget::addEntry);
