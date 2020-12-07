@@ -88,7 +88,7 @@ public:
         /* Create SQL statement */
         sql = "CREATE TABLE IF NOT EXISTS WORD(" \
         "ID INTEGER PRIMARY KEY AUTOINCREMENT," \
-        "SPELL TEXT NOT NULL," \
+        "SPELL TEXT NOT NULL UNIQUE," \
         "MEANING TEXT NOT NULL);" ;
 
         /* Execute SQL statement */
@@ -262,6 +262,7 @@ public:
 
     //导出
     int dumpToFile(const QString &fileName){
+
         sqlite3 *db;
         FILE    *dump_file;
         int i;
@@ -281,12 +282,13 @@ public:
 
 
         dump_file = fopen(fileName.toUtf8().data(), "w+");
+        fflush(dump_file);  //不加可能会没东西
         if (dump_file == NULL) {
-            /* Error handling with errno and exit */
+            /*   handling with errno and exit */
         }
 
         sqlite3_prepare_v2(db, "SELECT id, spell, meaning FROM WORD;",
-                           100, &stmt, NULL);
+                           1024, &stmt, NULL);
         /* dump columns names into the file */
         for (i = 0; i < col_num; i++) {
             if(i != col_num-1)
@@ -294,6 +296,8 @@ public:
             else
                 fprintf (dump_file, "%s", sqlite3_column_name(stmt, i));
         }
+        char  str[1024] ;
+        sprintf(str, sqlite3_column_name(stmt,2));
 
         fprintf(dump_file , "\n");
         /* Dump columns data into the file */
@@ -309,11 +313,85 @@ public:
         /* We're ready to leave */
         sqlite3_finalize (stmt);
         fflush(dump_file);  //不加可能会没东西
+
         sqlite3_close(db);
     }
 
     //导入
-    int importFromFile(QFile fileName);
+    int importFromFile(const QString &fileName){
+        //csv解析器
+
+
+        sqlite3 *db;
+        char *zErrMsg = 0;
+        int rc;
+        char  sql[2048];
+
+        int id;
+        char  imp_spell[1024];
+        char  imp_meaning[1024];
+        char StrLine[1024];
+
+        FILE * import_file;
+        const char* data = "Callback function called";
+
+        /* Open database */
+        rc = sqlite3_open("words.db", &db);
+        if( rc ) {
+        fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
+        return(0);
+        } else {
+        fprintf(stderr, "Opened database successfully\n");
+        }
+
+        import_file = fopen(fileName.toUtf8().data(), "r+");
+        if (import_file == NULL) {
+            /*   handling with errno and exit */
+            fclose(import_file);
+            return 0;
+        }
+        memset(imp_spell, 0, 1024);
+        memset(imp_meaning, 0, 1024);
+
+        //吧标题行刷掉
+        fgets(StrLine,1024,import_file);  //读取一行
+        while (!feof(import_file))
+        {
+            fgets(StrLine,1024,import_file);  //读取一行
+
+            char *token;
+            const char s[2] = ",";
+            /* 获取第一个子字符串变为id */
+            token = strtok(StrLine, s);
+            sscanf(token , "%d", &id);
+            //读取spell
+            token = strtok(NULL, s);
+            sscanf(token , "%s", imp_spell);
+            //读取meaning
+            token = strtok(NULL, s);
+            sscanf(token , "%s", imp_meaning);
+
+
+            printf("%s,%s\n", imp_spell,imp_meaning); //输出
+
+            /* Create merged SQL statement */
+            sprintf(sql ,"INSERT OR REPLACE INTO WORD (SPELL,MEANING) " \
+                    "VALUES ('%s', '%s');\0", imp_spell,imp_meaning
+                    );
+
+            /* Execute SQL statement */
+            rc = sqlite3_exec(db, sql, NULL, NULL, &zErrMsg);
+            if( rc != SQLITE_OK ) {
+            fprintf(stderr, "SQL error: %s\n", zErrMsg);
+            sqlite3_free(zErrMsg);
+            } else {
+            fprintf(stdout, "Operation done successfully\n");
+            }
+        }
+
+        sqlite3_close(db);
+        return 0;
+    }
 };
 
 //WordDB::map = QMap<QString, QString>();

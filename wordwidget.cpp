@@ -17,22 +17,31 @@ WordWidget::WordWidget(QWidget * parent)
 //    wordb->updateRow(Word("aa2","bbbbb"), Word("aa3","33333"));
 
 
+
     wordb->getAll(table->words);
+
 //    fprintf(stderr,"list:%s",WordDB::wordList[1].meaning.toUtf8().data());
     setupTabs();
 
 }
 
 void WordWidget::updateTable(){
-    for (int i = 0; i < table->words.size(); ++i) {
-        addEntry(table->words.at(i));
+
+    QList<Word> wordList;
+    table->words.clear();
+    wordb->getAll(wordList);
+    for (int i = 0; i < wordList.size(); ++i) {
+        addEntry(wordList.at(i));
     }
 }
 
 void WordWidget::addEntry(Word word){
      addEntry(word.spelling.toUtf8().data() , word.meaning.toUtf8().data());
 }
-void WordWidget::importFromFile(const QString &fileName){}
+void WordWidget::importFromFile(const QString &fileName){
+    wordb->importFromFile(fileName);
+    updateTable();
+}
 void WordWidget::dumpToFile(const QString &fileName){
 
 
@@ -125,8 +134,6 @@ void WordWidget::removeEntry(){
         wordb->deleteRow(word);
         //Êý¾ÝÉ¾³ý
         table->removeRows(row, 1, QModelIndex());
-
-
     }
 
 //    if (table->rowCount(QModelIndex()) == 0) {
