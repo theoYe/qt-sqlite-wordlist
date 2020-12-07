@@ -28,10 +28,24 @@ WordWidget::WordWidget(QWidget * parent)
 void WordWidget::updateTable(){
 
     QList<Word> wordList;
-    table->words.clear();
+    //删除所有行
+    table->removeRows(0, table->rowCount(QModelIndex()), QModelIndex());
     wordb->getAll(wordList);
     for (int i = 0; i < wordList.size(); ++i) {
-        addEntry(wordList.at(i));
+
+        QString spelling = wordList.at(i).spelling;
+        QString meaning = wordList.at(i).meaning;
+
+
+        if (!table->getWords().contains({ spelling, meaning })) {
+            table->insertRows(0, 1, QModelIndex());  //0表示插到最前面,1插入1行
+
+            QModelIndex index = table->index(0, 0, QModelIndex());
+            table->setData(index, spelling, Qt::EditRole);
+            index = table->index(0, 1, QModelIndex());  // 0行1列
+            table->setData(index, meaning, Qt::EditRole);
+        }
+
     }
 }
 
@@ -49,9 +63,7 @@ void WordWidget::dumpToFile(const QString &fileName){
 }
 
 void WordWidget::showAddEntryDialog(){
-
     AddDialog aDialog;
-
     if (aDialog.exec()){
         QString spelling= aDialog.spellingText->text();
         QString meaning= aDialog.meaningText->toPlainText();
@@ -62,6 +74,7 @@ void WordWidget::showAddEntryDialog(){
 
 
 void WordWidget::addEntry(QString spelling, QString meaning){
+
     if (!table->getWords().contains({ spelling, meaning })) {
         table->insertRows(0, 1, QModelIndex());  //0表示插到最前面,1插入1行
 

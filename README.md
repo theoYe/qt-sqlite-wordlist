@@ -13,7 +13,17 @@ sqlite
 
 ## Complie
 
+## Test
+
+- [x] add
+- [x] update
+- [x] delete
+- [x] import
+- [x] export
+
+
 ## Run
+
 
 
 
